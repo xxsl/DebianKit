@@ -1,0 +1,55 @@
+diff -Nur --exclude='.*~' --exclude='*~' --exclude='*.old' --exclude='.*.old' --exclude=bin --exclude=build_dir --exclude=dl --exclude=nohup.out --exclude=scripts --exclude=staging_dir --exclude=tmp --exclude=.svn attitude.armel/.config attitude.i386/.config
+--- attitude.armel/.config	2014-05-08 14:18:17.000000000 +0200
++++ attitude.i386/.config	2014-05-08 14:18:18.000000000 +0200
+@@ -1,5 +1,5 @@
+ CONFIG_HAVE_DOT_CONFIG=y
+-CONFIG_TARGET_android=y
++CONFIG_TARGET_x86=y
+ CONFIG_DEVEL=y
+ CONFIG_TOOLCHAINOPTS=y
+ CONFIG_GCC_VERSION_4_6_LINARO=y
+diff -Nur --exclude='.*~' --exclude='*~' --exclude='*.old' --exclude='.*.old' --exclude=bin --exclude=build_dir --exclude=dl --exclude=nohup.out --exclude=scripts --exclude=staging_dir --exclude=tmp --exclude=.svn attitude.armel/package/openvpn-static/Makefile attitude.i386/package/openvpn-static/Makefile
+--- attitude.armel/package/openvpn-static/Makefile	2014-05-07 07:27:15.000000000 +0200
++++ attitude.i386/package/openvpn-static/Makefile	2014-05-07 07:29:22.000000000 +0200
+@@ -40,8 +40,8 @@
+ 	--disable-socks \
+ 	--enable-password-save \
+ 	--enable-small \
+-	--with-ifconfig-path=/data/local/deb/armel/ifconfig \
+-	--with-route-path=/data/local/deb/armel/route
++	--with-ifconfig-path=/data/local/deb/i386/ifconfig \
++	--with-route-path=/data/local/deb/i386/route
+ 
+ TARGET_CFLAGS += -static
+ 
+diff -Nur --exclude='.*~' --exclude='*~' --exclude='*.old' --exclude='.*.old' --exclude=bin --exclude=build_dir --exclude=dl --exclude=nohup.out --exclude=scripts --exclude=staging_dir --exclude=tmp --exclude=.svn attitude.armel/toolchain/uClibc/patches-0.9.33.2/181-pthread_cleanup_fix_fix.patch attitude.i386/toolchain/uClibc/patches-0.9.33.2/181-pthread_cleanup_fix_fix.patch
+--- attitude.armel/toolchain/uClibc/patches-0.9.33.2/181-pthread_cleanup_fix_fix.patch	1970-01-01 01:00:00.000000000 +0100
++++ attitude.i386/toolchain/uClibc/patches-0.9.33.2/181-pthread_cleanup_fix_fix.patch	2014-05-08 11:27:00.000000000 +0200
+@@ -0,0 +1,27 @@
++diff -Nur uClibc-0.9.33.2.orig/libpthread/nptl/sysdeps/unix/sysv/linux/jmp-unwind.c uClibc-0.9.33.2/libpthread/nptl/sysdeps/unix/sysv/linux/jmp-unwind.c
++--- uClibc-0.9.33.2.orig/libpthread/nptl/sysdeps/unix/sysv/linux/jmp-unwind.c	2012-05-15 09:20:09.000000000 +0200
+++++ uClibc-0.9.33.2/libpthread/nptl/sysdeps/unix/sysv/linux/jmp-unwind.c	2014-05-08 11:22:07.000000000 +0200
++@@ -24,6 +24,14 @@
++ extern void __pthread_cleanup_upto (__jmp_buf env, char *targetframe);
++ #pragma weak __pthread_cleanup_upto
++ 
+++#ifndef SHARED
+++/* 
+++ * Prevents the compiler from optimizing out the __pthread_cleanup_upto != NULL
+++ * test when building static x86 binaries. If compiler thinks it's != NULL, but
+++ * weak link evals to 0x0 during runtime, then upon exit the CPU jumps to 0x00
+++ */
+++void *p = __pthread_cleanup_upto;
+++#endif
++ 
++ void _longjmp_unwind (jmp_buf env, int val);
++ void
++@@ -34,7 +42,7 @@
++     PTHFCT_CALL (ptr___pthread_cleanup_upto, (env->__jmpbuf,
++ 					      CURRENT_STACK_FRAME));
++ #else
++-  if (__pthread_cleanup_upto != NULL)
+++  if (p != NULL)
++     __pthread_cleanup_upto (env->__jmpbuf, CURRENT_STACK_FRAME);
++ #endif
++ }
